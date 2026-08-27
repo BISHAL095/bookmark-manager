@@ -16,6 +16,7 @@
     "graphql-yoga": "^5.22.0"
   },
   "scripts": {
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma skills sync || exit 0",
+    "dev": "bun run src/index.ts"
   }
 }

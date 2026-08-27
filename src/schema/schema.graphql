@@ -20,3 +20,11 @@ type Query {
   folder(id: ID!): Folder
   bookmarks(folderId: ID, search: String): [Bookmark!]!
 }
+
+type Mutation {
+    createFolder(name: String!): Folder!
+    createBookmark(title: String!, url: String!, tags: [String!]!, folderId: ID!): Bookmark!
+    updateBookmark(id: ID!, title: String, url: String, tags: [String!]): Bookmark!
+    deleteBookmark(id: ID!): ID!
+    moveBookmark(id: ID!, folderId: ID!): Bookmark!
+}
