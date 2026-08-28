@@ -51,7 +51,11 @@ test("bookmarks passes empty where clause when no filters given", async () => {
 
   await resolvers.Query.bookmarks(null, {}, mockContext);
 
-  expect(findManySpy).toHaveBeenCalledWith({ where: {} });
+  expect(findManySpy).toHaveBeenCalledWith({
+    where: {},
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 21,
+  });
 });
 
 test("bookmarks filters by folderId when provided", async () => {
@@ -60,7 +64,13 @@ test("bookmarks filters by folderId when provided", async () => {
 
   await resolvers.Query.bookmarks(null, { folderId: "folder-1" }, mockContext);
 
-  expect(findManySpy).toHaveBeenCalledWith({ where: { folderId: "folder-1" } });
+  expect(findManySpy).toHaveBeenCalledWith({
+    where: {
+      AND: [{ folderId: "folder-1" }],
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 21,
+  });
 });
 
 test("bookmarks filters by search term when provided", async () => {
@@ -71,8 +81,12 @@ test("bookmarks filters by search term when provided", async () => {
 
   expect(findManySpy).toHaveBeenCalledWith({
     where: {
-      OR: [{ title: { contains: "test", mode: "insensitive" } }],
+      AND: [
+        { OR: [{ title: { contains: "test", mode: "insensitive" } }] },
+      ],
     },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 21,
   });
 });
 
@@ -84,11 +98,15 @@ test("bookmarks filters by both folderId and search term when both provided", as
 
   expect(findManySpy).toHaveBeenCalledWith({
     where: {
-      folderId: "folder-1",
-      OR: [{ title: { contains: "test", mode: "insensitive" } }],
+      AND: [
+        { folderId: "folder-1" },
+        { OR: [{ title: { contains: "test", mode: "insensitive" } }] },
+      ],
     },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 21,
   });
-}); 
+});
 
 test("createBookmark throws on empty title", async () => {
   await expect(
