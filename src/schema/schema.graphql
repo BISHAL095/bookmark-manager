@@ -15,10 +15,16 @@ type Bookmark {
   folder: Folder!
 }
 
+type BookmarkPage {
+  items: [Bookmark!]!
+  nextCursor: String
+  hasNextPage: Boolean!
+}
+
 type Query {
   folders: [Folder!]!
   folder(id: ID!): Folder
-  bookmarks(folderId: ID, search: String): [Bookmark!]!
+  bookmarks(folderId: ID, search: String, take: Int, cursor: String): BookmarkPage!
 }
 
 type Mutation {

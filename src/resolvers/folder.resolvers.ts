@@ -1,6 +1,7 @@
 import type { Context } from "../index";
 import type { Prisma } from "../../generated/prisma/client";
 import { GraphQLError } from "graphql";
+import { decodeCursor, encodeCursor } from "../lib/cursor";
 
 
 export const resolvers = {
@@ -15,24 +16,47 @@ export const resolvers = {
     },
     bookmarks: async (
       _parent: unknown,
-      args: { folderId?: string; search?: string },
+      args: { folderId?: string; search?: string, take?: number; cursor?: string },
       context: Context
     ) => {
-      const whereClause: Prisma.BookmarkWhereInput = {};
+
+      const conditions: Prisma.BookmarkWhereInput[] = [];
 
       if (args.folderId) {
-        whereClause.folderId = args.folderId;
+        conditions.push({ folderId: args.folderId });
       }
 
       if (args.search) {
-        whereClause.OR = [
-          { title: { contains: args.search, mode: "insensitive" } },
-        ];
+        conditions.push({
+          OR: [{ title: { contains: args.search, mode: "insensitive" } }],
+        });
       }
 
-      return context.prisma.bookmark.findMany({
+      if (args.cursor) {
+        const decoded = decodeCursor(args.cursor);
+        conditions.push({
+          OR: [
+            { createdAt: { lt: new Date(decoded.createdAt) } },
+            { createdAt: new Date(decoded.createdAt), id: { lt: decoded.id } },
+          ],
+        });
+      }
+
+      const whereClause = conditions.length > 0 ? { AND: conditions } : {};
+      const limit = args.take ?? 20;
+      const rows = await context.prisma.bookmark.findMany({
         where: whereClause,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit + 1,
       });
+      const lastRow = rows[limit - 1];
+      return {
+        items: rows.slice(0, limit),
+        nextCursor: rows.length > limit && lastRow
+          ? encodeCursor(lastRow.createdAt, lastRow.id)
+          : null,
+        hasNextPage: rows.length > limit,
+      };
     },
   },
   Mutation: {
@@ -135,5 +159,8 @@ export const resolvers = {
         });
       }
     },
+  },
+  Bookmark: {
+    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
   },
 };
