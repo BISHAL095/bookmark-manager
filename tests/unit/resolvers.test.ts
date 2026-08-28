@@ -99,3 +99,15 @@ test("createBookmark throws on empty title", async () => {
     )
   ).rejects.toThrow(); // or a more specific GraphQLError check
 });
+
+test("moveBookmark throws when target folder does not exist", async () => {
+  mockPrisma.folder.findUnique = mock(() => Promise.resolve(null)) as unknown as PrismaClient["folder"]["findUnique"];
+
+  await expect(
+    resolvers.Mutation.moveBookmark(
+      null,
+      { id: "bookmark-1", folderId: "nonexistent-folder" },
+      mockContext
+    )
+  ).rejects.toThrow();
+});
